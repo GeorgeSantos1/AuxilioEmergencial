@@ -1,0 +1,48 @@
+
+.skin-blue {
+  font-family : 'titillium web';
+  font-weight: bold;
+  color: white;
+}
+
+.skin-blue .main-header .navbar .nav > li > a {
+  color: #40e0d0;
+}
+
+label {
+  font-family:Titillium Web;
+}
+
+.box.box-solid.box-primary, .box.box-primary {
+    border-color: rgb(51,148,175);
+    border-left-color: rgb(51,148,175);
+    border-right-color: rgb(51,148,175);
+    border-top-color: rgb(51,148,175);
+    border-radius: 5px;
+}
+
+.box.box-solid.box-primary > .box-header {
+    background: rgb(51,148,175);
+    border-radius: 5px;
+}
+
+
+.main-header .logo {
+  font-family : 'titillium web';
+}
+
+.main-sidebar {
+  font-family: 'titillium web';
+}
+
+.box.box-solid.box-primary > .box-header h3 {
+    color: #ffffff;
+    font-family: 'titillium web';
+    font-weight: bold;
+}
+
+.box.box-primary > .box-header h3 {
+    color: #3394af;
+    font-family: 'titillium web';
+    font-weight: bold;
+}

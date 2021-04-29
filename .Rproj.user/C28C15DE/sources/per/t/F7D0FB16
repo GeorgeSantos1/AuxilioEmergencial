@@ -1,0 +1,25 @@
+{
+    "id": "F7D0FB16",
+    "path": "~/Auxilio_Aplication/app.R",
+    "project_path": "app.R",
+    "type": "r_source",
+    "hash": "2677799853",
+    "contents": "",
+    "dirty": false,
+    "created": 1619557176954.0,
+    "source_on_save": false,
+    "relative_order": 1,
+    "properties": {
+        "docOutlineVisible": "0",
+        "cursorPosition": "159,53",
+        "scrollLine": "149"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1619678800,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1619678800109,
+    "read_only": false,
+    "read_only_alternatives": []
+}
