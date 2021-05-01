@@ -1,3 +1,16 @@
+.dataTables_wrapper {
+  font-weight: normal;
+}
+
+.aba_base_brasil {
+  color:#2f89a4;
+  font-weight: normal;
+  font-size: 16px;
+}
+
+#databrasil {
+  color:red;
+}
 
 .skin-blue {
   font-family : 'titillium web';
