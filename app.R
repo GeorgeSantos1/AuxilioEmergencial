@@ -1,26 +1,36 @@
 
 library(shiny)
+library(ggplot2)
+library(qs)
 library(shinydashboard)
 library(dashboardthemes)
 library(shinyWidgets)
 library(leaflet)
 library(plotly)
-library(crul)
 library(readr)
 library(forcats)
 library(reactable)
 library(DT)
+library(sf)
 library(scales)
+library(shinycssloaders)
+library(dplyr)
+library(ggthemes)
+library(readr)
+library(sp)
+library(tippy)
 
-if(!exists("brasil_df")) {
-  source('auxiliar.R',encoding = 'UTF-8')
-}
+options(encoding = "UTF-8")
 
+source("modulos/rtexto.R",encoding = "UTF-8")
+source("auxiliar.R",encoding = "UTF-8")
+
+####
 customLogo <- shinyDashboardLogoDIY(
     boldText = "Auxílio"
     ,mainText = "Emergencial"
     ,textSize = 16
-    ,badgeText = "v1"
+    ,badgeText = "V.1"
     ,badgeTextColor = "white"
     ,badgeTextSize = 2
     ,badgeBackColor = "#40E0D0"
@@ -34,17 +44,12 @@ ui <- dashboardPage(
         title = customLogo,
         tags$li(class="dropdown",
                 tags$a(href="#"
-                       ,icon("linkedin"), "Meu Perfil", target="_blank")),
-        tags$li(class="dropdown",
-                tags$a(href="#",
-                       icon("github"), "Código Fonte", target="_blank"))
+                       ,icon("linkedin"), "Meu Perfil", target="_blank"))
     ),
+  
     dashboardSidebar(
         sidebarMenu(
-            menuItem(
-                text = 'Apresentação',
-                tabName = 'apresentacao'
-            ),
+          id = 'sidebar',
             menuItem(
                 text = 'Brasil',
                 tabName = 'brasil',
@@ -60,7 +65,11 @@ ui <- dashboardPage(
                             tabName = 'informacao_bahia'),
                 menuSubItem(text = 'Base de dados',
                             tabName = 'base_bahia')
-            )
+            ),
+            menuItem(
+                text = 'Sobre',
+                tabName = "sobre"
+          )
         )
     ),
     dashboardBody(
@@ -69,11 +78,6 @@ ui <- dashboardPage(
             tags$link(rel = "stylesheet", type = "text/css", href = "custom.css")
         ),
         tabItems(
-            ##### Apresentação ----
-            tabItem(
-                tabName = 'apresentacao',
-                h2('aaaaaaaaaaaaaaaaaaa'),
-            ),
             #####  Brasil - Informações ----
             tabItem(
                 tabName = 'informacao_brasil',
@@ -86,7 +90,17 @@ ui <- dashboardPage(
                     column(
                       width = 12,
                       box(
-                        title = 'Distribuição do auxílio emergencial',
+                        title = 'Distribuição do Auxílio Emergencial',
+                        status = 'primary',
+                        color="red",
+                        solidHeader = TRUE,
+                        width = 8,
+                        collapsible = TRUE,
+                        leafletOutput('mapa_br_aux',height = 400) %>% 
+                          withSpinner(type=4,
+                                      color = '#40e0d0')
+                      ),
+                      box(
                         status = 'primary',
                         color="red",
                         solidHeader = FALSE,
@@ -94,67 +108,62 @@ ui <- dashboardPage(
                         collapsible = TRUE,
                         awesomeRadio(
                           inputId = 'radiomapabrasil',
-                          label = 'Mapa de Calor:',
-                          choices = c('Quantidade de Beneficiários' = 'QUANTIDADE.DE.BENEFICIÁRIOS',
+                          label = 'Tematizar com:',
+                          choices = c('Quantidade de Beneficiados' = 'QUANTIDADE_DE_BENEFICIARIOS',
                                       'Total Disponibilizado' = 'TOTAL.DISPONIBILIZADO',
                                       '% da População Beneficiada' = 'porcentagem_beneficiada'),
-                          selected = 'QUANTIDADE.DE.BENEFICIÁRIOS',
+                          selected = 'QUANTIDADE_DE_BENEFICIARIOS',
                           status = 'success'
                         ),
                         awesomeCheckbox(
                           inputId = 'exibir_legendas_br',
-                          label = 'Mostrar legenda?'
+                          label = 'Mostrar Legenda?'
                         ),
-                      ),
-                      box(
-                        title = 'Distribuição do auxílio emergencial',
-                        status = 'primary',
-                        color="red",
-                        solidHeader = TRUE,
-                        width = 8,
-                        collapsible = TRUE,
-                        leafletOutput('mapa_br_aux',height = 400)
                       ),
                     ),
                     column(
                       width = 12,
                       box(
-                        title = 'Top 5 Estados Por valor médio anual',
-                        status = 'primary',
-                        solidHeader = TRUE,
-                        width = 8,
-                        collapsible = TRUE,
-                        plotlyOutput('graf_top5')
-                      ),
-                      box(
-                        title = 'Top 5 Estados Por valor médio anual',
                         status = 'primary',
                         solidHeader = FALSE,
                         width = 4,
                         collapsible = TRUE,
                         awesomeRadio(
                           inputId = 'top_or_bottom_choice',
-                          label = 'Gráfico de Colunas: ',
-                          choices = c('Quantidade de Beneficiários' = "QUANTIDADE DE BENEFICIÁRIOS",
+                          label = 'Selecione a Variável: ',
+                          choices = c('Quantidade de Beneficiados' = "QUANTIDADE DE BENEFICIÁRIOS",
                                       'Total Disponibilizado' = "TOTAL DISPONIBILIZADO",
                                       '% da População Beneficiada' = 'porcentagem_beneficiada'),
                           selected = "QUANTIDADE DE BENEFICIÁRIOS",
                           status = 'success'
                         ),
-                        div(
-                          style = "text-align: center;",
-                          switchInput(
-                            inputId = "top_or_bottom",
-                            label = "My label",
-                            value = TRUE,
-                            onLabel = '10+',
-                            size = 'normal',
-                            offLabel = '10-',
-                            labelWidth = "100px",
-                            handleWidth = "100px",
-                            offStatus = 'danger'
-                          )
+                        tippy::with_tippy(
+                          div(
+                            style = "text-align: center;",
+                            switchInput(
+                              inputId = "top_or_bottom",
+                              label = 'Estados com:',
+                              value = TRUE,
+                              onLabel = 'Maior Quantidade',
+                              size = 'normal',
+                              offLabel = 'Menor Quantidade',
+                              labelWidth = "100px",
+                              handleWidth = "100px",
+                              offStatus = 'danger'
+                            ),
+                          ),
+                          tooltip = 'Clique Aqui Para Modificar o Gráfico'
                         )
+                      ),
+                      box(
+                        title = 'Principais Estados Beneficiados',
+                        status = 'primary',
+                        solidHeader = TRUE,
+                        width = 8,
+                        collapsible = TRUE,
+                        plotlyOutput('graf_top5') %>% 
+                          withSpinner(type=4,
+                                      color = '#40e0d0')
                       ),
                     ),
                 )
@@ -162,18 +171,63 @@ ui <- dashboardPage(
             #####  Brasil - Base de dados ----
             tabItem(
                 tabName = 'base_brasil',
-                p('Base de dados utilizada para criação dessa aba de dashboard.',class='aba_base_brasil'),
-                DT::DTOutput('databrasil'),
+                box(
+                  width = 12,
+                  status = 'primary',
+                  p('Base de dados com informações sobre a distribuição do auxílio 
+                    emergencial nos estados brasileiros no ano de 2020.',class='aba_base_brasil'),
+                  DT::DTOutput('databrasil'),
+                  downloadButton('down','Baixar (.CSV)',class = 'download_button')
+                )
             ),
             #####  Bahia - Informações ----
             tabItem(
                 tabName = 'informacao_bahia',
-                h3('Bahia - Informações')
+                nameui("nameui")
             ),
             #####  Bahia - Base de dados ----
             tabItem(
                 tabName = 'base_bahia',
-                h3('Bahia - Base de dados')
+                box(
+                  width = 12,
+                  status = 'primary',
+                  p('Base de dados com informações sobre a distribuição do auxílio 
+                    emergencial nos municípios baianos no ano de 2020.',class="aba_base_brasil"),
+                  DT::DTOutput('databahia'),
+                  downloadButton('down1','Baixar (.CSV)',class = 'download_button')
+                )
+            ),
+            tabItem(
+              tabName = 'sobre',
+              div(class = 'sobre',
+                  h3('Data de Atualização'),
+                  p('Última atualização do dashboard foi realizada em 21/06/2021.'),
+                  h3('Contexto'),
+                  p('Como tentativa de instaurar medidas de proteção social e atenuar a crise econômica decorrente aos 
+                    efeitos causados pela pandemia de COVID-19, no Brasil foi criado o auxílio emergencial.'),
+                  p("O auxílio emergencial (também chamado de Caixa Auxílio Emergencial ou coronavoucher) é um benefício 
+                    instituído no Brasil pela Lei de nº 13.982/2020, que previu o repasse de 600 reais mensais 
+                    (inicialmente por três meses) a trabalhadores informais e de baixa renda, microempreendedores individuais
+                    e também contribuintes individuais do Instituto Nacional do Seguro Social (INSS). No ano de 2020,
+                    o auxílio começou a ser pago no mês de abril, no valor de R$ 600,00 (seiscentos reais), e foi até o mês 
+                    de dezembro. "),
+                  h3('Fonte dos dados'),
+                  tags$ul(
+                    tags$li(
+                      p('API do ',a('Portal da transparência:',href='http://www.portaltransparencia.gov.br/'),
+                      tags$u(tags$em(' Total pago')),' e',tags$u(tags$em(' Quantidade de beneficiados')),' para estados e municípios.'),
+                    ),
+                    tags$li(
+                      p(a("IBGE:",href='ftp://ftp.ibge.gov.br/Estimativas_de_Populacao/Estimativas_2020/estimativa_dou_2020.pdf'),
+                        'Estimativas para', tags$u(tags$em(' População')), 'dos estados e municípios')
+                    )
+                  ),
+                  h3("Responsável"),
+                  p('George Anderson Alves dos Santos'),
+                  p('Estatístico - Analista de dados - Cientista de dados'),
+                  p('Email:',a('george_anderson',href='mailto:george_13031995@hotmail.com'))
+                  
+              )
             )
         )
     )
@@ -182,14 +236,17 @@ ui <- dashboardPage(
 
 # Server ------------------------------------------------------------------
 
-server <- function(input, output) {
+server <- function(input, output, session) {
+  
+  
+  callModule(name, "nameui")
 
 # Mapa Do Brasil ----------------------------------------------------------
 
     #### Função Paleta de Cores - Mapa do brasil
     pal <- reactive({
       
-      if (input$radiomapabrasil == 'QUANTIDADE.DE.BENEFICIÁRIOS'){
+      if (input$radiomapabrasil == 'QUANTIDADE_DE_BENEFICIARIOS'){
         pal <- colorNumeric(palette = "Reds",brasil_df[[input$radiomapabrasil]])
       }
       else if (input$radiomapabrasil == 'TOTAL.DISPONIBILIZADO'){
@@ -198,24 +255,25 @@ server <- function(input, output) {
       else {
         pal <- colorNumeric(palette = "PuBu",brasil_df[[input$radiomapabrasil]])
       }
-    })
+    }) %>%
+      bindCache(input$radiomapabrasil)
     
     palcolor <- reactive({
       pal <- pal()
       ~pal(brasil_df[[input$radiomapabrasil]]) 
-    })
+    }) %>%
+      bindCache(input$radiomapabrasil, pal())
     #### Adicionar e retirar legenda - mapa do brasil
     observe({
       proxy <- leafletProxy("mapa_br_aux", data = brasil_df)
     
-      if (input$radiomapabrasil == 'QUANTIDADE.DE.BENEFICIÁRIOS'){
-        legenda_t <- 'Quantidade de Beneficiários'
+      if (input$radiomapabrasil == 'QUANTIDADE_DE_BENEFICIARIOS'){
+        legenda_t <- 'Quantidade de Beneficiados'
       } else if (input$radiomapabrasil == 'TOTAL.DISPONIBILIZADO') {
         legenda_t <- 'Total Disponibilizado'
       } else {
         legenda_t <- '% Beneficiados'
       }
-      
       proxy %>% clearControls()
       if (input$exibir_legendas_br){
         pal <- pal()
@@ -226,7 +284,7 @@ server <- function(input, output) {
                     values = ~brasil_df[[input$radiomapabrasil]], 
                     opacity = 0.8)
       }
-    })
+    }) %>% bindEvent(input$radiomapabrasil,pal(),input$exibir_legendas_br)
     
     ##### Mapa Brasil
     output$mapa_br_aux <- renderLeaflet({
@@ -246,7 +304,7 @@ server <- function(input, output) {
                                     strong('Estado: '), name_state, "<br>",
                                     strong('Quantidade de Beneficiados: '), 
                                     formatC(
-                                        QUANTIDADE.DE.BENEFICIÁRIOS,
+                                        `QUANTIDADE_DE_BENEFICIARIOS`,
                                         big.mark='.', format = 'fg',
                                         decimal.mark = ','
                                     ),"<br>",
@@ -256,11 +314,12 @@ server <- function(input, output) {
                                       big.mark='.', format = 'fg',
                                       decimal.mark = ','
                                     ), "<br>",
-                                    strong('Percentual de Beneficiários (Diretamente): '),
+                                    strong('% de Beneficiados: '),
                                     porcentagem_beneficiada, ' %' , "<br>"
                               )
-                    )
-    })
+                    ) %>%
+        setView(lat = -14.2401,lng = -53.1805,zoom = 4)
+    }) %>% bindCache(palcolor())
 
     
 # Gráfico Top/Bottom 10 - Brasil ------------------------------------------
@@ -287,7 +346,8 @@ server <- function(input, output) {
                  name_state = fct_rev(name_state)) %>%
           head(10)
       }
-    })
+    }) %>% bindCache(input$top_or_bottom_choice,input$top_or_bottom)
+    
     #### Customização de Fonte/Rótulo para gráfico Top/Bot 10 Brasil
     font <- list(
       family = "titillium web",
@@ -303,24 +363,23 @@ server <- function(input, output) {
     #### Texto indicando se é top 10 ou bottom 10
     top_or_bot_10 <- reactive({
       if (input$top_or_bottom == TRUE){
-        'Top 10 - '
-        
+        'Estados com maior '
       } 
       else {
-        'Bottom 10 - '
+        'Estados com menor '
       }
     })
     
     ##### Texto indicado qual variável está sendo utilizada
     texto_variavel <- reactive({
       if (input$top_or_bottom_choice == "QUANTIDADE DE BENEFICIÁRIOS"){
-        'Quantidade de Beneficiários'
+        'quantidade de beneficiados'
       } 
       else if (input$top_or_bottom_choice == "TOTAL DISPONIBILIZADO"){
-        'Total Disponibilizado'
+        'total disponibilizado (R$)'
       }
       else {
-        '% Beneficiada'
+        '% da população beneficiada'
       }
     })
     
@@ -351,21 +410,28 @@ server <- function(input, output) {
                                          big.mark = '.',
                                          decimal.mark = ',',
                                          accuracy = acuracia))) +
-        geom_bar(aes(fill = .data[[input$top_or_bottom_choice]])) +
+        geom_bar(aes(fill = .data[[input$top_or_bottom_choice]],
+                     colour = .data[[input$top_or_bottom_choice]]),
+                 width = 0.7) +
         coord_flip() +
         labs(
-          title = paste(titlep1,titlep2),
+          title = paste(titlep1,titlep2, sep = ''),
           x = NULL,
           y = NULL
         ) +
         scale_fill_gradient(low='#1bece3',high ='#2f89a4') +
+        scale_color_gradient(low = '#25c0b9',high = '#2b7187') +
         scale_y_continuous(labels = label_comma(
           big.mark = '.',
           decimal.mark = ','
         )) +
-        guides(fill=FALSE) +
-        theme_minimal() +
-        theme(text = element_text(family = 'titillium web'))
+        # guides(fill=FALSE,colour = FALSE) +
+        ggthemes::theme_hc() +
+        theme(text = element_text(family = 'titillium web'),
+              plot.title = element_text(family = 'titillium web',
+                                   face = "bold",
+                                   color = '#4d4d4d'),
+              legend.position="none")
       ggplotly(g2,tooltip = 'text') %>%
         style(hoverlabel = label) %>%
         layout(font = font)
@@ -408,7 +474,7 @@ server <- function(input, output) {
     output$total_beneficiarios_brasil <- renderValueBox({
       valueBox(
         value= h3(total_beneficiarios_brasil(),class='value-box-h3',style='font-size: 25px;'),
-        subtitle = 'Total de Beneficiários',
+        subtitle = 'Total de Beneficiados',
         color='teal',
         icon = icon('user-check'))
     })
@@ -448,48 +514,74 @@ server <- function(input, output) {
     output$porcentagem_beneficiada <- renderValueBox({
       valueBox(
         value = h3(porcentagem_beneficiada(),class='value-box-h3',style='font-size: 25px;'),
-        subtitle = 'Percentual de Beneficiários (Diretamente)',
+        subtitle = 'Percentual de Beneficiados (Diretamente)',
         color = 'teal',
         icon = icon('percentage')
       )
-    })
-    
-    #### Média valor pago (mensal)
-    media_valor_pago_mensal <- reactive({
-      round(sum(brasil_df_raw$`TOTAL DISPONIBILIZADO`)/sum(brasil_df_raw$`QUANTIDADE DE BENEFICIÁRIOS`),0)/9
-      
     })
 
 # Dataset - Brasil --------------------------------------------------------
     
     ##### Filtrando dataset
-    dataset_br <- brasil_df_raw %>%
-      rename('Estado' = name_state,
-             'Qtd de Beneficiários' = `QUANTIDADE DE BENEFICIÁRIOS`,
-             'Total Disponibilizado' = `TOTAL DISPONIBILIZADO`,
-             'População Total' = `População total`,
-             '% de beneficiados' = `porcentagem_beneficiada`) %>%
-      mutate(`Qtd de Beneficiários` = paste(comma(`Qtd de Beneficiários`,
-                                                  big.mark = '.',
-                                                  decimal.mark = ',')),
-             `População Total` = paste(comma(`População Total`,
-                                             big.mark = '.',
-                                             decimal.mark = ',')),
-             `Total Disponibilizado` = paste(sep = '','R$ ',comma(`Total Disponibilizado`,
-                                                                  big.mark = '.',
-                                                                  decimal.mark = ','),',00'))
+    # dataset_br <- brasil_df_raw %>%
+    #   rename('Estado' = name_state,
+    #          'Qtd de Beneficiários' = `QUANTIDADE DE BENEFICIÁRIOS`,
+    #          'Total Disponibilizado' = `TOTAL DISPONIBILIZADO`,
+    #          'População Total' = `População total`,
+    #          '% de beneficiados' = `porcentagem_beneficiada`) %>%
+    #   mutate(`Qtd de Beneficiários` = paste(comma(`Qtd de Beneficiários`,
+    #                                               big.mark = '.',
+    #                                               decimal.mark = ',')),
+    #          `População Total` = paste(comma(`População Total`,
+    #                                          big.mark = '.',
+    #                                          decimal.mark = ',')),
+    #          `Total Disponibilizado` = paste(sep = '','R$ ',comma(`Total Disponibilizado`,
+    #                                                               big.mark = '.',
+    #                                                               decimal.mark = ','),',00'))
     ##### Renderizar dataset
     output$databrasil <- DT::renderDT(server = FALSE,
-                                      DT::datatable(dataset_br,
-                                                    extensions = 'Buttons', options = list(
+                                      DT::datatable(brasil_df_raw,
+                                                    options = list(
                                                       dom = 'Bfrtip',
-                                                      buttons = 'csv'
+                                                      initComplete = JS(
+                                                        "function(settings, json) {",
+                                                        "$(this.api().table().header()).css({'background-color': '#1c5876', 'color': '#fff'});",
+                                                        "}")
                                                       )) 
                                       )
+    output$down <- downloadHandler(
+      
+      filename = function(){
+        paste('Base_Brasil', ".csv", sep = "")
+      },
+      content = function(file){
+        write.csv2(brasil_df_raw, file, row.names = FALSE)
+      }
+    )
+    
 
+# Dataset - Bahia ---------------------------------------------------------
+    output$databahia <- DT::renderDT(server = FALSE,
+                                     DT::datatable(bahia_df_raw,
+                                                   options = list(
+                                                     dom = 'Bfrtip',
+                                                     initComplete = JS(
+                                                       "function(settings, json) {",
+                                                       "$(this.api().table().header()).css({'background-color': '#1c5876', 'color': '#fff'});",
+                                                       "}")
+                                                   )) 
+    )
+    
+    output$down1 <- downloadHandler(
+      
+      filename = function(){
+        paste('Base_Bahia', ".csv", sep = "")
+      },
+      content = function(file){
+        write.csv2(bahia_df_raw, file, row.names = FALSE)
+      }
+    )
 
 }
 # Run the application 
 shinyApp(ui = ui, server = server)
-
-    
