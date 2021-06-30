@@ -5,6 +5,8 @@
 
 Dashboard para visualização da distribuição do auxiílio emergencial no ano de 2020 em estados brasileiros e municípios da Bahia.
 
+link: https://georgeaas1.shinyapps.io/auxilioemergencial/
+
 ## Pastas e arquivos
 
 * `app.R` - Script principal da aplicação.
