@@ -18,11 +18,11 @@ library(dplyr)
 library(ggthemes)
 library(readr)
 library(sp)
-library(tippy)
+library(prompter)
 
 options(encoding = "UTF-8")
 
-source("modulos/rtexto.R",encoding = "UTF-8")
+source("modulos/bahia_info.R",encoding = "UTF-8")
 source("auxiliar.R",encoding = "UTF-8")
 
 ####
@@ -30,7 +30,7 @@ customLogo <- shinyDashboardLogoDIY(
     boldText = "Auxílio"
     ,mainText = "Emergencial"
     ,textSize = 16
-    ,badgeText = "V.1"
+    ,badgeText = "2020"
     ,badgeTextColor = "white"
     ,badgeTextSize = 2
     ,badgeBackColor = "#40E0D0"
@@ -73,6 +73,7 @@ ui <- dashboardPage(
         )
     ),
     dashboardBody(
+        use_prompt(),
         shinyDashboardThemes('blue_gradient'),
         tags$head(
             tags$link(rel = "stylesheet", type = "text/css", href = "custom.css")
@@ -137,9 +138,9 @@ ui <- dashboardPage(
                           selected = "QUANTIDADE DE BENEFICIÁRIOS",
                           status = 'success'
                         ),
-                        tippy::with_tippy(
-                          div(
-                            style = "text-align: center;",
+                        div(
+                          style = "text-align: center;",
+                          add_prompt(
                             switchInput(
                               inputId = "top_or_bottom",
                               label = 'Estados com:',
@@ -151,9 +152,10 @@ ui <- dashboardPage(
                               handleWidth = "100px",
                               offStatus = 'danger'
                             ),
-                          ),
-                          tooltip = 'Clique Aqui Para Modificar o Gráfico'
-                        )
+                            position = "bottom",
+                            message = "Clique Aqui Para Modificar o Gráfico"
+                          )
+                        ),
                       ),
                       box(
                         title = 'Principais Estados Beneficiados',
@@ -284,7 +286,7 @@ server <- function(input, output, session) {
                     values = ~brasil_df[[input$radiomapabrasil]], 
                     opacity = 0.8)
       }
-    }) %>% bindEvent(input$radiomapabrasil,pal(),input$exibir_legendas_br)
+    })
     
     ##### Mapa Brasil
     output$mapa_br_aux <- renderLeaflet({
@@ -319,7 +321,7 @@ server <- function(input, output, session) {
                               )
                     ) %>%
         setView(lat = -14.2401,lng = -53.1805,zoom = 4)
-    }) %>% bindCache(palcolor())
+    })
 
     
 # Gráfico Top/Bottom 10 - Brasil ------------------------------------------
@@ -346,7 +348,7 @@ server <- function(input, output, session) {
                  name_state = fct_rev(name_state)) %>%
           head(10)
       }
-    }) %>% bindCache(input$top_or_bottom_choice,input$top_or_bottom)
+    })
     
     #### Customização de Fonte/Rótulo para gráfico Top/Bot 10 Brasil
     font <- list(

@@ -101,9 +101,9 @@ nameui <- function(id){
                 selected = "quantidadeBeneficiados",
                 status = 'success'
               ),
-              tippy(
-                div(
-                  style = "text-align: center;",
+              div(
+                style = "text-align: center;",
+                add_prompt(
                   switchInput(
                     inputId = ns("top_or_bottom"),
                     label = "Municípios com:",
@@ -114,10 +114,11 @@ nameui <- function(id){
                     labelWidth = "100px",
                     handleWidth = "100px",
                     offStatus = 'danger'
-                  )
-                ),
-                tooltip = 'Clique Aqui Para Modificar o Gráfico'
-              )
+                  ),
+                  position = "bottom",
+                  message = "Clique Aqui Para Modificar o Gráfico"
+                )
+              ),
             )
           )
     )
