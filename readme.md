@@ -13,7 +13,7 @@ link: https://georgeaas1.shinyapps.io/auxilioemergencial/
 * `auxiliar.R` - Script com processamento das bases utilizadas.
 * `Dataset` - Pasta com bases de dados utilizadas.
 * `modulos/bahia_info.R` - Script referente a aba de informações do estado da Bahia.
-* `Script/API_DF` - Pasta com scripts utilizados para web scrapping.
+* `Script/API_DF` - Pasta com scripts utilizados para web scraping.
 * `www/custom.css` - Configurações CSS para elementos do dashboard.
 
 ## Próximos passos
